@@ -17,11 +17,8 @@ RUN apt-get update && apt-get install -y curl
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
-# Add Poetry to the PATH
-ENV PATH="/root/.local/bin:$PATH"
-
 # Install dependencies using Poetry
-RUN poetry install --no-root
+RUN poetry install
 
 # Copy the rest of the application code to the container
 COPY . /app
