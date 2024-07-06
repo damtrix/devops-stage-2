@@ -59,5 +59,8 @@ ENV POSTGRES_USER=hngstage2_user
 ENV POSTGRES_PASSWORD=dUNBb643DeNbnqq8BUFoaW9mIChlNQrV
 
 
-## Set up the database and run the backend server
-CMD ["sh", "-c", "poetry run bash ./prestart.sh && poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Run the application
+RUN bash ./prestart.sh
+    
+# Command to run the application
+CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
