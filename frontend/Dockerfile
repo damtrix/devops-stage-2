@@ -1,11 +1,11 @@
 # Step 1: Build the React app
-FROM node:14 AS build
+FROM node:18 AS build
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm install
+RUN npm cache clean --force && npm install
 
 COPY . .
 
