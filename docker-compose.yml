@@ -5,17 +5,19 @@ services:
     build: ./frontend
     container_name: frontend
     ports:
-      - '80:80'
+      - '5137:5137'
     env_file: './frontend/.env'
 
   backend:
     env_file: './backend/.env'
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: backend
     ports:
-      - '80:80'
+      - '8000:8000'
     environment:
-      - DOMAIN=localhost
+      - DOMAIN=18.212.207.22/
       - ENVIRONMENT=local
       - PROJECT_NAME=Full Stack FastAPI Project
       - STACK_NAME=full-stack-fastapi-project
@@ -31,19 +33,19 @@ services:
       - SMTP_TLS=True
       - SMTP_SSL=False
       - SMTP_PORT=587
-      - POSTGRES_SERVER=dpg-cq4pcstds78s73co6hcg-a.oregon-postgres.render.com
+      - POSTGRES_SERVER=db
       - POSTGRES_DB=hngstage2
-      - POSTGRES_USER=hngstage2_user
-      - POSTGRES_PASSWORD=dUNBb643DeNbnqq8BUFoaW9mIChlNQrV
+      - POSTGRES_USER=damtrix
+      - POSTGRES_PASSWORD=helpmeohlord
     depends_on:
       - db
 
   db:
     image: postgres:16
     environment:
-      POSTGRES_DB: dpg-cq4pcstds78s73co6hcg-a.oregon-postgres.render.com
-      POSTGRES_USER: hngstage2_user
-      POSTGRES_PASSWORD: dUNBb643DeNbnqq8BUFoaW9mIChlNQrV
+      POSTGRES_DB: hng11devops
+      POSTGRES_USER: damtrix
+      POSTGRES_PASSWORD: helpmeohlord
 
   adminer:
     image: adminer
@@ -54,6 +56,7 @@ services:
 
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
     container_name: nginx-proxy-manager
     ports:
       - '80:80' # Public HTTP Port
