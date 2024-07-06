@@ -4,43 +4,62 @@ services:
   frontend:
     build: ./frontend
     container_name: frontend
-    networks:
-      - web
+    ports:
+      - '5173:5173'
+    env_file: './frontend/.env'
 
   backend:
+    env_file: './backend/.env'
     build: ./backend
     container_name: backend
-    networks:
-      - web
+    ports:
+      - '8000:8000'
+    environment:
+      - DOMAIN=localhost
+      - ENVIRONMENT=local
+      - PROJECT_NAME=Full Stack FastAPI Project
+      - STACK_NAME=full-stack-fastapi-project
+      - BACKEND_CORS_ORIGINS=http://localhost,http://localhost:5173,https://localhost,https://localhost:5173,http://damtrix.mooo.com,https://damtrix.mooo.com
+      - SECRET_KEY=changethis123
+      - FIRST_SUPERUSER=devops@hng.tech
+      - FIRST_SUPERUSER_PASSWORD=devops#HNG11
+      - USERS_OPEN_REGISTRATION=True
+      - SMTP_HOST=
+      - SMTP_USER=
+      - SMTP_PASSWORD=
+      - EMAILS_FROM_EMAIL=info@example.com
+      - SMTP_TLS=True
+      - SMTP_SSL=False
+      - SMTP_PORT=587
+      - POSTGRES_SERVER=dpg-cq4pcstds78s73co6hcg-a.oregon-postgres.render.com
+      - POSTGRES_DB=hngstage2
+      - POSTGRES_USER=hngstage2_user
+      - POSTGRES_PASSWORD=dUNBb643DeNbnqq8BUFoaW9mIChlNQrV
     depends_on:
       - db
 
   db:
-    image: postgres:13
+    image: postgres:16
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: app_db
-    networks:
-      - web
+      POSTGRES_DB: dpg-cq4pcstds78s73co6hcg-a.oregon-postgres.render.com
+      POSTGRES_USER: hngstage2_user
+      POSTGRES_PASSWORD: dUNBb643DeNbnqq8BUFoaW9mIChlNQrV
 
   adminer:
     image: adminer
     container_name: adminer
+    restart: always
     ports:
       - '8080:8080'
-    networks:
-      - web
 
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
     container_name: nginx-proxy-manager
     ports:
-      - '8090:80'
-      - '81:81'
-      - '443:443'
-    networks:
-      - web
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '8090:81' # Admin Web Port
+
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
