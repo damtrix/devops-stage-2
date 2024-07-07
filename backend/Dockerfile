@@ -1,10 +1,6 @@
 # Use an official Python runtime as a parent image
 FROM python:3.10-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -21,8 +17,11 @@ COPY . /app
 # Ensure the prestart.sh script has execute permission
 RUN chmod +x /app/prestart.sh
 
+# Set the PYTHONPATH environment variable
+ENV PYTHONPATH=/app
+
 # Run the prestart script to set up the database
-RUN bash /app/prestart.sh
+RUN /app/prestart.sh
 
 # Expose the port the app runs on
 EXPOSE 8000
