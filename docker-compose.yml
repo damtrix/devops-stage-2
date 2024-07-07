@@ -43,7 +43,7 @@ services:
     build: ./frontend
     container_name: frontend
     env_file:
-      - frontend/.env # Environment variables for the frontend
+      - frontend/.env.prod # Environment variables for the frontend
     networks:
       - mynet
 
