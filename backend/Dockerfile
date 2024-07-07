@@ -1,30 +1,36 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+    FROM python:3.10-slim
+    
+    # Set environment variables
+    ENV PYTHONDONTWRITEBYTECODE 1
+    ENV PYTHONUNBUFFERED 1
+    
+    # Set the working directory in the container
+    WORKDIR /app
+    
+    # Install system dependencies (if needed)
+    RUN apt-get update && apt-get install -y \
+        curl \
+        build-essential \
+        && apt-get clean
+    
+    # Install Poetry
+    RUN pip install poetry
+    
+    # Copy only the dependency files to optimize caching
+    COPY poetry.lock pyproject.toml /app/
+    
+    # Install dependencies
+    RUN poetry config virtualenvs.create false \
+        && poetry install --no-dev --no-interaction --no-ansi
+    
+    # Copy the application code into the container
+    COPY . /app/
+    
+    # Expose the port where FastAPI runs (adjust if necessary)
+    EXPOSE 8000
 
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the requirements file into the container
-COPY pyproject.toml poetry.lock /app/
-
-# Install dependencies
-RUN pip install poetry
-RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
-
-# Copy the rest of the application code into the container
-COPY . /app
-
-# Ensure the prestart.sh script has execute permission
-RUN chmod +x /prestart.sh
-
-# Set the PYTHONPATH environment variable
-ENV PYTHONPATH=/app
-
-# Run the prestart script to set up the database
-RUN /app/prestart.sh
-
-# Expose the port the app runs on
-EXPOSE 8000
-
-# Command to run the application
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    # Run the application
+    RUN bash ./prestart.sh
+    
+    # Command to run the application
+    CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
