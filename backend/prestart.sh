@@ -1,10 +1,13 @@
 #! /usr/bin/env bash
 
+# Set the PYTHONPATH to the app directory
+export PYTHONPATH=/app
+
 # Let the DB start
-python ./app/backend_pre_start.py
+python ./app/app/backend_pre_start.py
 
 # Run migrations
 alembic upgrade head
 
 # Create initial data in DB
-python ./app/initial_data.py
+python ./app/app/initial_data.py
