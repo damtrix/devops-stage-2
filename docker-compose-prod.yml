@@ -1,0 +1,76 @@
+# Docker Compose Configuration
+# Version: '3.9'
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:13
+    container_name: database
+    restart: always
+    env_file:
+      - backend/.env   # Environment variables for PostgreSQL
+    ports:
+      - "5432:5432"   # Expose PostgreSQL port
+    volumes:
+      - postgres_data_3:/var/lib/postgresql/data  # Persistent storage for database data
+    networks:
+      - mynet
+
+  # Adminer Service (Database Management Tool)
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8080:8080"   # Expose Adminer port
+    networks:
+      - mynet
+
+  # Backend Service
+  backend:
+    build: ./backend
+    container_name: backend
+    command: bash -c "poetry run bash ./prestart.sh && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    depends_on:
+      - db   # Ensure the database service is started before backend
+    env_file:
+      - backend/.env   # Environment variables for the backend
+    networks:
+      - mynet
+
+  # Frontend Service
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    env_file:
+      - frontend/.env.prod   # Environment variables for the frontend
+    networks:
+      - mynet
+
+  # Nginx Proxy Manager Service
+  nginx:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"     # Public HTTP Port
+      - "443:443"   # Public HTTPS Port
+      - "8090:81"     # Admin Web Port for Nginx Proxy Manager
+    volumes:
+      - ./data:/data
+      - ./nginx/nginx-prod.conf:/data/nginx/custom/http_top.conf  # Custom Nginx configuration
+      - ./letsencrypt:/etc/letsencrypt  # Let's Encrypt SSL certificates storage
+    depends_on:
+      - frontend   # Ensure frontend service is started before nginx
+      - backend    # Ensure backend service is started before nginx
+      - adminer    # Ensure adminer service is started before nginx
+    networks:
+      - mynet
+
+# Define named volumes for persistent data storage
+volumes:
+  postgres_data_3:
+
+# Define custom network for inter-service communication
+networks:
+  mynet:

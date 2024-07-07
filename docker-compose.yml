@@ -1,72 +1,76 @@
-version: '3.8'
+# Docker Compose Configuration
+# Version: '3.9'
 
 services:
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - '5137:5137'
-    env_file: './frontend/.env'
-
-  backend:
-    env_file: './backend/.env'
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: backend
-    ports:
-      - '8000:8000'
-    # environment:
-    #   - DOMAIN=18.212.207.22/
-    #   - ENVIRONMENT=local
-    #   - PROJECT_NAME=Full Stack FastAPI Project
-    #   - STACK_NAME=full-stack-fastapi-project
-    #   - BACKEND_CORS_ORIGINS=http://localhost,http://localhost:5173,https://localhost,https://localhost:5173,http://damtrix.mooo.com,https://damtrix.mooo.com
-    #   - SECRET_KEY=changethis123
-    #   - FIRST_SUPERUSER=devops@hng.tech
-    #   - FIRST_SUPERUSER_PASSWORD=devops#HNG11
-    #   - USERS_OPEN_REGISTRATION=True
-    #   - SMTP_HOST=
-    #   - SMTP_USER=
-    #   - SMTP_PASSWORD=
-    #   - EMAILS_FROM_EMAIL=info@example.com
-    #   - SMTP_TLS=True
-    #   - SMTP_SSL=False
-    #   - SMTP_PORT=587
-    #   - POSTGRES_SERVER=db
-    #   - POSTGRES_DB=hngstage2
-    #   - POSTGRES_USER=damtrix
-    #   - POSTGRES_PASSWORD=helpmeohlord
-    # depends_on:
-    #   - db
-
+  # PostgreSQL Database Service
   db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: hng11devops
-      POSTGRES_USER: damtrix
-      POSTGRES_PASSWORD: helpmeohlord
+    image: postgres:13
+    container_name: database
+    restart: always
+    env_file:
+      - backend/.env   # Environment variables for PostgreSQL
+    ports:
+      - "5432:5432"   # Expose PostgreSQL port
+    volumes:
+      - postgres_data_3:/var/lib/postgresql/data  # Persistent storage for database data
+    networks:
+      - mynet
 
+  # Adminer Service (Database Management Tool)
   adminer:
     image: adminer
     container_name: adminer
     restart: always
     ports:
-      - '8080:8080'
+      - "8080:8080"   # Expose Adminer port
+    networks:
+      - mynet
 
-  nginx-proxy-manager:
+  # Backend Service
+  backend:
+    build: ./backend
+    container_name: backend
+    command: bash -c "poetry run bash ./prestart.sh && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    depends_on:
+      - db   # Ensure the database service is started before backend
+    env_file:
+      - backend/.env   # Environment variables for the backend
+    networks:
+      - mynet
+
+  # Frontend Service
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    env_file:
+      - frontend/.env   # Environment variables for the frontend
+    networks:
+      - mynet
+
+  # Nginx Proxy Manager Service
+  nginx:
     image: jc21/nginx-proxy-manager:latest
+    container_name: nginx
     restart: unless-stopped
-    container_name: nginx-proxy-manager
     ports:
-      - '80:80' # Public HTTP Port
-      - '443:443' # Public HTTPS Port
-      - '8090:81' # Admin Web Port
-
+      - "80:80"     # Public HTTP Port
+      - "443:443"   # Public HTTPS Port
+      - "8090:81"     # Admin Web Port for Nginx Proxy Manager
     volumes:
       - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
+      - ./nginx/nginx.conf:/data/nginx/custom/http_top.conf  # Custom Nginx configuration
+      - ./letsencrypt:/etc/letsencrypt  # Let's Encrypt SSL certificates storage
+    depends_on:
+      - frontend   # Ensure frontend service is started before nginx
+      - backend    # Ensure backend service is started before nginx
+      - adminer    # Ensure adminer service is started before nginx
+    networks:
+      - mynet
 
+# Define named volumes for persistent data storage
+volumes:
+  postgres_data_3:
+
+# Define custom network for inter-service communication
 networks:
-  web:
-    driver: bridge
+  mynet:
