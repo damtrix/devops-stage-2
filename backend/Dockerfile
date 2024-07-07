@@ -15,7 +15,7 @@ RUN poetry config virtualenvs.create false && poetry install --no-dev --no-inter
 COPY . /app
 
 # Ensure the prestart.sh script has execute permission
-RUN chmod +x /app/prestart.sh
+RUN chmod +x /prestart.sh
 
 # Set the PYTHONPATH environment variable
 ENV PYTHONPATH=/app
