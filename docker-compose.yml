@@ -1,76 +1,56 @@
-# Docker Compose Configuration
-# Version: '3.9'
+version: '3.7'
 
 services:
-  # PostgreSQL Database Service
-  db:
-    image: postgres:13
-    container_name: database
-    restart: always
-    env_file:
-      - backend/.env # Environment variables for PostgreSQL
+  traefik:
+    image: traefik:v2.4
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
     ports:
-      - '5432:5432' # Expose PostgreSQL port
+      - "80:80"
+      - "8080:8080"
     volumes:
-      - postgres_data_3:/var/lib/postgresql/data # Persistent storage for database data
-    networks:
-      - mynet
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
-  # Adminer Service (Database Management Tool)
+  frontend:
+    build:
+      context: ./frontend
+    labels:
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    depends_on:
+      - backend
+      - postgres
+
+  backend:
+    build:
+      context: ./backend
+    labels:
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.http.routers.docs.rule=PathPrefix(`/docs`)"
+      - "traefik.http.services.docs.loadbalancer.server.port=8000"
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://app:task2@hngdevops@postgres:5432/app
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: task2@hngdevops
+      POSTGRES_DB: app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   adminer:
     image: adminer
-    container_name: adminer
-    restart: always
     ports:
-      - '8080:8080' # Expose Adminer port
-    networks:
-      - mynet
+      - "8080:8080"
+    labels:
+      - "traefik.http.routers.adminer.rule=Host(`db.domain`)"
 
-  # Backend Service
-  backend:
-    build: ./backend
-    container_name: backend
-    command: bash -c "poetry run bash ./prestart.sh && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-    depends_on:
-      - db # Ensure the database service is started before backend
-    env_file:
-      - backend/.env # Environment variables for the backend
-    networks:
-      - mynet
-
-  # Frontend Service
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    env_file:
-      - frontend/.env.prod # Environment variables for the frontend
-    networks:
-      - mynet
-
-  # Nginx Proxy Manager Service
-  nginx:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: nginx
-    restart: unless-stopped
-    ports:
-      - '80:80' # Public HTTP Port
-      - '443:443' # Public HTTPS Port
-      - '8090:81' # Admin Web Port for Nginx Proxy Manager
-    volumes:
-      - ./data:/data
-      - ./nginx/nginx.conf:/data/nginx/custom/http_top.conf # Custom Nginx configuration
-      - ./letsencrypt:/etc/letsencrypt # Let's Encrypt SSL certificates storage
-    depends_on:
-      - frontend # Ensure frontend service is started before nginx
-      - backend # Ensure backend service is started before nginx
-      - adminer # Ensure adminer service is started before nginx
-    networks:
-      - mynet
-
-# Define named volumes for persistent data storage
 volumes:
-  postgres_data_3:
-
-# Define custom network for inter-service communication
-networks:
-  mynet:
+  postgres_data:
