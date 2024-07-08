@@ -1,56 +1,52 @@
 version: '3.7'
 
 services:
-  traefik:
-    image: traefik:v2.4
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
   frontend:
-    build:
-      context: ./frontend
+    build: ./frontend
+    container_name: react_frontend
     labels:
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
-    depends_on:
-      - backend
-      - postgres
+      - 'traefik.http.routers.frontend.rule=Host(`yourdomain.com`)'
+      - 'traefik.http.services.frontend.loadbalancer.server.port=80'
 
   backend:
-    build:
-      context: ./backend
+    build: ./backend
+    container_name: fastapi_backend
     labels:
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "traefik.http.routers.docs.rule=PathPrefix(`/docs`)"
-      - "traefik.http.services.docs.loadbalancer.server.port=8000"
-    depends_on:
-      - postgres
-    environment:
-      - DATABASE_URL=postgresql://app:task2@hngdevops@postgres:5432/app
+      - 'traefik.http.routers.backend.rule=Host(`yourdomain.com`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`))'
+      - 'traefik.http.services.backend.loadbalancer.server.port=8000'
 
-  postgres:
+  db:
     image: postgres:13
     environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: task2@hngdevops
-      POSTGRES_DB: app
+      POSTGRES_DB: yourdbname
+      POSTGRES_USER: yourdbuser
+      POSTGRES_PASSWORD: yourdbpassword
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   adminer:
     image: adminer
-    ports:
-      - "8080:8080"
+    container_name: adminer
     labels:
-      - "traefik.http.routers.adminer.rule=Host(`db.domain`)"
+      - 'traefik.http.routers.adminer.rule=Host(`db.yourdomain.com`)'
+    ports:
+      - '8080:8080'
+
+  traefik:
+    image: traefik:v2.2
+    container_name: traefik
+    command:
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--entrypoints.web.address=:80'
+    ports:
+      - '80:80'
+      - '8090:8090'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    labels:
+      - 'traefik.http.routers.api.rule=Host(`proxy.yourdomain.com`)'
+      - 'traefik.http.services.api.loadbalancer.server.port=8090'
 
 volumes:
   postgres_data:

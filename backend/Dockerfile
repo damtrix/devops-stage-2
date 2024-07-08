@@ -1,13 +1,22 @@
-FROM python:3.10-slim
+# Dockerfile for FastAPI Backend
+FROM python:3.9-slim
 
+# Install Poetry
+RUN pip install poetry
+
+# Set working directory
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock /app/
+# Copy only the poetry files to leverage caching
+COPY pyproject.toml poetry.lock* ./
 
-RUN pip install --default-timeout=100 poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-root
+# Install dependencies
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
 
-COPY . /app
+# Copy the rest of the application
+COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the application
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+EXPOSE 8000
