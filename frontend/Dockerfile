@@ -1,15 +1,29 @@
-FROM node:slim
+# Use an official Node.js runtime as a parent image
+FROM node:20 as build
 
+# Set the working directory
 WORKDIR /app
 
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
+# Install dependencies
 RUN npm install
 
+# Copy the rest of the application code
 COPY . .
 
+# Build the application
 RUN npm run build
 
-EXPOSE 5173
+# Use an official Nginx image to serve the build
+FROM nginx:alpine
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Copy the build output to the Nginx HTML directory
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
