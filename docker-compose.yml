@@ -39,8 +39,6 @@ services:
       POSTGRES_USER: damtrix
       POSTGRES_PASSWORD: pleasejustwork
       POSTGRES_DB: db
-    networks:
-      - web
 
   adminer:
     image: adminer
