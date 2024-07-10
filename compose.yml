@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  backend:
+    env_file: './backend/.env'
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    env_file: './frontend/.env'
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/letsencrypt:/etc/letsencrypt
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+      - db
+      - adminer
+      - nginx-proxy-manager
+
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '8090:81' # Admin Web Port
+
+    volumes:
+      - ./proxy/data:/data
+      - ./proxy/letsencrypt:/etc/letsencrypt
+
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: hng11devops2
+      POSTGRES_USER: alexin
+      POSTGRES_PASSWORD: freakingtired
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+volumes:
+  db_data:
+  
