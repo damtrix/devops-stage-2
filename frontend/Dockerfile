@@ -1,15 +1,17 @@
-FROM node:slim
+# Use the latest official Node.js image as a base
+FROM node:latest
 
+# Set the working directory
 WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm install
-
+# Copy the application files
 COPY . .
 
-RUN npm run build
+# Install dependencies
+RUN npm install
 
+# Expose the port the development server runs on
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Run the development server
+CMD ["npm", "run", "dev", "--", "--host"]

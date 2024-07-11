@@ -1,64 +1,61 @@
-version: '3.8'
+
 
 services:
   backend:
-    env_file: './backend/.env'
     build:
       context: ./backend
-      dockerfile: Dockerfile
+    container_name: fastapi_app
     ports:
-      - '8000:8000'
+      - "8000:8000"
     depends_on:
       - db
+    environment:
+      VITE_API_URL: http://localhost:8000
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+    container_name: nodejs_app
     ports:
-      - '5173:5173'
-    env_file: './frontend/.env'
-
-  nginx:
-    image: nginx:latest
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/letsencrypt:/etc/letsencrypt
-    ports:
-      - '80:80'
-    depends_on:
-      - frontend
-      - backend
-      - db
-      - adminer
-      - nginx-proxy-manager
-
-  nginx-proxy-manager:
-    image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
-    ports:
-      - '8090:81' # Admin Web Port
-
-    volumes:
-      - ./proxy/data:/data
-      - ./proxy/letsencrypt:/etc/letsencrypt
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
 
   db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: hngdevopsstage2
-      POSTGRES_USER: damtrix
-      POSTGRES_PASSWORD: justpleasework
+    image: postgres:latest
+    container_name: postgres_db
+    ports:
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env
 
   adminer:
     image: adminer
-    restart: always
+    container_name: adminer
     ports:
-      - 8080:8080
+      - "8080:8080"
+
+  proxy:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx_proxy_manager
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
     environment:
-      ADMINER_DEFAULT_SERVER: db
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    depends_on:
+      - db
+      - backend
+      - frontend
+      - adminer
 
 volumes:
-  db_data:
+  postgres_data:
+  data:
+  letsencrypt:

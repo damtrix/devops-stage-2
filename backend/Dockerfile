@@ -1,26 +1,25 @@
-    FROM python:3.10-slim
-    
-    # Set environment variables
-    ENV PYTHONDONTWRITEBYTECODE 1
-    ENV PYTHONUNBUFFERED 1
-    
-    # Set the working directory in the container
-    WORKDIR /app
-    
-    # Install Poetry
-    RUN pip install poetry
-    
-    # Copy only the dependency files to optimize caching
-    COPY poetry.lock pyproject.toml /app/
-    
-    # Install dependencies
-    RUN poetry config virtualenvs.create false \
-        && poetry install --no-dev --no-interaction --no-ansi
-    
-    # Copy the application code into the container
-    COPY . /app/
-    
-    # Expose the port where FastAPI runs (adjust if necessary)
-    EXPOSE 8000
+# Use the latest official Python image as a base
+FROM python:latest
 
-    CMD poetry run bash ./prestart.sh; poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm
+
+# Install Poetry using pip
+RUN pip install poetry
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the application files
+COPY . .
+
+# Install dependencies using Poetry
+RUN poetry install
+
+# Expose the port FastAPI runs on
+EXPOSE 8000
+
+# Run the prestart script and start the server
+CMD ["sh", "-c", "poetry run bash ./prestart.sh && poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
